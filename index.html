@@ -15,9 +15,33 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
+            overflow: hidden; /* Скрываем скроллы */
+            user-select: none; /* Чтобы текст не выделялся при перетаскивании */
+            -webkit-user-select: none;
         }
 
-        h1 { font-weight: 400; font-size: 32px; color: #bdc1c6; margin-bottom: 20px; }
+        /* Заголовок и автор */
+        .title-container {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            cursor: default;
+        }
+
+        h1 { 
+            font-weight: 400; 
+            font-size: 32px; 
+            color: #bdc1c6; 
+            margin: 0; 
+        }
+
+        .author-tag {
+            font-size: 14px;
+            color: #5f6368;
+            font-weight: 500;
+            opacity: 0.7;
+        }
 
         .translator-container {
             background-color: #1e1f21;
@@ -28,7 +52,8 @@
             display: flex;
             flex-direction: column;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            overflow: hidden;
+            position: relative;
+            z-index: 1;
         }
 
         .header-tabs {
@@ -39,13 +64,49 @@
             height: 55px;
         }
 
-        .tab { color: #8ab4f8; font-size: 14px; font-weight: 500; border-bottom: 2px solid #8ab4f8; height: 100%; display: flex; align-items: center; padding: 0 10px; }
+        .tab { 
+            color: #8ab4f8; 
+            font-size: 14px; 
+            font-weight: 500; 
+            border-bottom: 2px solid #8ab4f8; 
+            height: 100%; 
+            display: flex; 
+            align-items: center; 
+            padding: 0 10px; 
+            cursor: pointer;
+        }
+        
+        .tab.inactive {
+            border-bottom: 2px solid transparent;
+            color: #9aa0a6;
+            cursor: default;
+        }
+
         .swap-icon { margin: 0 20px; color: #9aa0a6; cursor: pointer; font-size: 24px; transition: 0.3s; }
         .swap-icon:hover { color: #fff; transform: rotate(180deg); }
 
+        /* Кнопка Gravity */
+        .gravity-tab {
+            margin-left: auto;
+            color: #9aa0a6;
+            font-size: 13px;
+            text-transform: uppercase;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+        
+        .gravity-tab:hover {
+            color: #e8eaed;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
         .main-panels { display: flex; flex-wrap: wrap; }
 
-        .panel { flex: 1; min-width: 300px; min-height: 250px; padding: 25px; position: relative; box-sizing: border-box; display: flex; flex-direction: column; }
+        .panel { flex: 1; min-width: 300px; min-height: 250px; padding: 25px; position: relative; box-sizing: border-box; display: flex; flex-direction: column; background: #1e1f21; }
         .input-panel { border-right: 1px solid #3c4043; }
 
         textarea {
@@ -97,13 +158,18 @@
 </head>
 <body>
 
-    <h1>Beer Translate</h1>
+    <div class="title-container">
+        <h1>Beer Translate</h1>
+        <span class="author-tag">by spiderkaras</span>
+    </div>
 
     <div class="translator-container">
         <div class="header-tabs">
             <div class="tab" id="left-label">Текст</div>
             <div class="swap-icon" onclick="toggleMode()">⇄</div>
-            <div class="tab" id="right-label" style="border:none; color:#9aa0a6;">Пивной язык</div>
+            <div class="tab inactive" id="right-label">Пивной язык</div>
+            
+            <div class="gravity-tab" onclick="startGravity()">Gravity</div>
         </div>
 
         <div class="main-panels">
@@ -123,6 +189,7 @@
     </div>
 
 <script>
+    /* --- ЛОГИКА ПЕРЕВОДЧИКА --- */
     const beerMap = {
         'А': 'влдаолдцт3894', 'Б': '78ем9т4325243895тм72', 'В': 'атдлжиыфвеи0653', 'Г': 'тмщышевз34',
         'Д': '34три537уиадлвы', 'Е': 'ь02м392м7', 'Ё': 'ь02м392м8', 'Ж': 'тт32м4о35т2',
@@ -188,11 +255,9 @@
         document.getElementById('output-field').innerText = '';
     }
 
-    // Универсальная функция копирования (HTTPS + HTTP)
     function copyResult() {
         const text = document.getElementById('output-field').innerText;
         if (!text) return;
-
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(text).then(animateCopy);
         } else {
@@ -202,12 +267,7 @@
             textArea.style.left = "-9999px";
             document.body.appendChild(textArea);
             textArea.select();
-            try {
-                document.execCommand('copy');
-                animateCopy();
-            } catch (err) {
-                console.error('Ошибка копирования', err);
-            }
+            try { document.execCommand('copy'); animateCopy(); } catch (err) {}
             document.body.removeChild(textArea);
         }
     }
@@ -221,6 +281,205 @@
             btn.innerHTML = oldSvg;
             btn.style.color = '';
         }, 2000);
+    }
+
+    /* --- ЛОГИКА ГРАВИТАЦИИ И ПЕРЕТАСКИВАНИЯ --- */
+    let gravityActive = false;
+    let physicsObjects = [];
+    let dragTarget = null;
+    let dragOffset = { x: 0, y: 0 };
+    let lastMousePos = { x: 0, y: 0 };
+    
+    // Переменные мыши
+    let mouseX = 0;
+    let mouseY = 0;
+
+    function startGravity() {
+        if (gravityActive) return;
+        gravityActive = true;
+
+        // Отключаем выделение текста глобально, чтобы не мешало таскать
+        document.body.style.userSelect = 'none';
+
+        // 1. Собираем элементы
+        let elements = [
+            document.querySelector('.title-container'),
+            document.querySelector('.input-panel'),
+            document.querySelector('.panel:last-child'),
+            document.querySelector('.translator-container')
+        ];
+
+        // Добавляем кусочки хедера
+        document.querySelectorAll('.header-tabs > div').forEach(el => elements.push(el));
+        elements = elements.filter(el => el);
+
+        // 2. Создаем физ. объекты
+        elements.forEach(el => {
+            const rect = el.getBoundingClientRect();
+            
+            physicsObjects.push({
+                el: el,
+                x: rect.left,
+                y: rect.top,
+                w: rect.width,
+                h: rect.height,
+                vx: (Math.random() - 0.5) * 10, 
+                vy: 0, 
+                rot: 0,
+                vrot: (Math.random() - 0.5) * 0.2,
+                bounciness: 0.5 + Math.random() * 0.3,
+                isDragging: false
+            });
+        });
+
+        // 3. Переносим в absolute
+        physicsObjects.forEach(obj => {
+            const el = obj.el;
+            el.style.width = obj.w + 'px';
+            el.style.height = obj.h + 'px';
+            el.style.boxSizing = 'border-box';
+            el.style.margin = '0';
+            el.style.position = 'absolute';
+            el.style.left = '0';
+            el.style.top = '0';
+            el.style.transform = `translate(${obj.x}px, ${obj.y}px)`;
+            el.style.zIndex = '1000';
+            document.body.appendChild(el);
+        });
+
+        // 4. Подключаем слушатели событий мыши/тача
+        window.addEventListener('mousedown', handleDown);
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleUp);
+        
+        // Для телефонов
+        window.addEventListener('touchstart', handleDown, {passive: false});
+        window.addEventListener('touchmove', handleMove, {passive: false});
+        window.addEventListener('touchend', handleUp);
+
+        animate();
+    }
+
+    function handleDown(e) {
+        if (!gravityActive) return;
+        
+        // Получаем координаты (мышь или палец)
+        const cx = e.touches ? e.touches[0].clientX : e.clientX;
+        const cy = e.touches ? e.touches[0].clientY : e.clientY;
+        mouseX = cx; 
+        mouseY = cy;
+        lastMousePos = { x: cx, y: cy };
+
+        // Ищем, попали ли в объект (проверяем с конца массива, т.к. последние слои выше)
+        for (let i = physicsObjects.length - 1; i >= 0; i--) {
+            const obj = physicsObjects[i];
+            
+            // Простая проверка попадания в прямоугольник (без учета поворота для простоты)
+            // При сильном вращении клик может быть неточным, но для хаоса пойдет
+            if (cx >= obj.x && cx <= obj.x + obj.w &&
+                cy >= obj.y && cy <= obj.y + obj.h) {
+                
+                dragTarget = obj;
+                obj.isDragging = true;
+                obj.vx = 0;
+                obj.vy = 0;
+                // Считаем смещение курсора относительно угла объекта
+                dragOffset.x = cx - obj.x;
+                dragOffset.y = cy - obj.y;
+                
+                // Поднимаем Z-index активного элемента
+                obj.el.style.zIndex = '2000';
+                
+                // Блокируем скролл на мобильных
+                if(e.cancelable) e.preventDefault();
+                break;
+            }
+        }
+    }
+
+    function handleMove(e) {
+        if (!gravityActive) return;
+        const cx = e.touches ? e.touches[0].clientX : e.clientX;
+        const cy = e.touches ? e.touches[0].clientY : e.clientY;
+        
+        mouseX = cx;
+        mouseY = cy;
+
+        if (dragTarget) {
+            if(e.cancelable) e.preventDefault(); 
+        }
+    }
+
+    function handleUp() {
+        if (dragTarget) {
+            dragTarget.isDragging = false;
+            dragTarget.el.style.zIndex = '1000';
+            dragTarget = null;
+        }
+    }
+
+    // 5. Физический цикл
+    const gravity = 0.6;
+    const floorFriction = 0.90;
+
+    function animate() {
+        const screenW = window.innerWidth;
+        const screenH = window.innerHeight;
+
+        physicsObjects.forEach(obj => {
+            if (obj.isDragging) {
+                // Если тащим - позиция следует за мышью
+                const newX = mouseX - dragOffset.x;
+                const newY = mouseY - dragOffset.y;
+
+                // Вычисляем скорость "броска" (разница координат)
+                obj.vx = (newX - obj.x) * 0.8; // 0.8 для плавности
+                obj.vy = (newY - obj.y) * 0.8;
+
+                obj.x = newX;
+                obj.y = newY;
+                
+                // Сбрасываем вращение или медленно крутим при перетаскивании
+                obj.vrot = obj.vx * 0.02; 
+
+            } else {
+                // Обычная физика
+                obj.vy += gravity;
+                obj.x += obj.vx;
+                obj.y += obj.vy;
+                obj.rot += obj.vrot;
+
+                // Пол
+                if (obj.y + obj.h > screenH) {
+                    obj.y = screenH - obj.h;
+                    obj.vy *= -obj.bounciness;
+                    obj.vx *= floorFriction;
+                    obj.vrot *= 0.9;
+                    if (Math.abs(obj.vy) < gravity) obj.vy = 0;
+                }
+                
+                // Потолок (чтобы не улетали совсем вверх)
+                if (obj.y < -500) { obj.y = -500; obj.vy = 0; }
+
+                // Стены
+                if (obj.x < 0) {
+                    obj.x = 0;
+                    obj.vx *= -obj.bounciness;
+                }
+                if (obj.x + obj.w > screenW) {
+                    obj.x = screenW - obj.w;
+                    obj.vx *= -obj.bounciness;
+                }
+            }
+
+            obj.el.style.transform = `translate(${obj.x}px, ${obj.y}px) rotate(${obj.rot}rad)`;
+        });
+
+        // Сохраняем прошлую позицию мыши для расчета инерции
+        lastMousePos.x = mouseX;
+        lastMousePos.y = mouseY;
+
+        requestAnimationFrame(animate);
     }
 </script>
 </body>
