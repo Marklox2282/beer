@@ -69,7 +69,6 @@
         .tab.inactive { border-bottom: 2px solid transparent; color: #9aa0a6; }
         .swap-icon { margin: 0 20px; color: #9aa0a6; cursor: pointer; font-size: 24px; }
 
-        /* Кнопки справа */
         .right-tabs {
             margin-left: auto;
             display: flex;
@@ -131,7 +130,7 @@
         .copy-btn { background: transparent; border: none; color: #9aa0a6; cursor: pointer; padding: 8px; border-radius: 50%; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
         .copy-btn svg { width: 24px; height: 24px; fill: currentColor; }
 
-        /* --- STYLES FOR GAMES MODAL --- */
+        /* MODAL GAMES */
         .modal-overlay {
             display: none;
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -144,48 +143,34 @@
             border: 1px solid #3c4043;
             border-radius: 12px;
             width: 500px;
-            max-width: 90%;
+            max-width: 95%;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
-        .game-header {
-            padding: 15px; border-bottom: 1px solid #3c4043;
-            display: flex; justify-content: space-between; align-items: center;
-        }
+        .game-header { padding: 15px; border-bottom: 1px solid #3c4043; display: flex; justify-content: space-between; align-items: center; }
         .game-menu { padding: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-        .game-btn {
-            background: #303134; color: #e8eaed; border: none; padding: 15px;
-            border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;
-        }
+        .game-btn { background: #303134; color: #e8eaed; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .game-btn:hover { background: #8ab4f8; color: #000; }
         .close-game { cursor: pointer; color: #9aa0a6; font-size: 24px; }
         
-        .game-content { padding: 20px; display: none; flex-direction: column; align-items: center; min-height: 300px; }
+        .game-content { padding: 20px; display: none; flex-direction: column; align-items: center; min-height: 350px; }
         
-        /* Snake Styles */
-        #snake-canvas { background: #000; border: 2px solid #3c4043; }
+        /* Snake */
+        #snake-canvas { background: #000; border: 2px solid #3c4043; max-width: 100%; }
         
-        /* Minesweeper Styles */
-        .mines-grid { display: grid; gap: 2px; background: #3c4043; border: 2px solid #3c4043; user-select: none; }
-        .mine-cell { 
-            width: 30px; height: 30px; background: #bdc1c6; 
-            display: flex; align-items: center; justify-content: center; 
-            font-weight: bold; cursor: pointer; font-size: 14px; color: #000;
-        }
+        /* Minesweeper */
+        .mines-grid { display: grid; gap: 2px; background: #3c4043; border: 2px solid #3c4043; }
+        .mine-cell { width: 30px; height: 30px; background: #bdc1c6; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; color: #000; }
         .mine-cell.revealed { background: #303134; color: #fff; }
-        .mine-cell.boom { background: #e53935; }
+        .mine-cell.boom { background: #f44336; }
 
-        /* Geo Styles */
-        .geo-card { text-align: center; width: 100%; }
-        .geo-flag { font-size: 100px; margin: 20px 0; }
+        /* GeoGuessr FIXED */
+        .geo-flag-container { margin: 20px 0; min-height: 120px; display: flex; align-items: center; justify-content: center; }
+        .geo-flag-img { height: 120px; border-radius: 8px; border: 1px solid #3c4043; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .geo-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
-        .score-board { margin-bottom: 10px; color: #8ab4f8; }
 
-        .back-btn { margin-bottom: 10px; align-self: flex-start; background: none; border: none; color: #9aa0a6; cursor: pointer; }
-        .back-btn:hover { color: #fff; }
-
+        .back-btn { margin-bottom: 15px; align-self: flex-start; background: none; border: none; color: #9aa0a6; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -202,13 +187,11 @@
             <div class="tab" id="left-label">Текст</div>
             <div class="swap-icon" onclick="toggleMode()">⇄</div>
             <div class="tab inactive" id="right-label">Пивной язык</div>
-            
             <div class="right-tabs">
                 <div class="action-tab game-tab" onclick="openGameModal()">Games</div>
                 <div class="action-tab" onclick="startGravity()">Gravity</div>
             </div>
         </div>
-
         <div class="main-panels">
             <div class="panel input-panel">
                 <div class="clear-btn" onclick="clearAll()">✕</div>
@@ -229,41 +212,33 @@
     <div class="modal-overlay" id="gameModal">
         <div class="game-window">
             <div class="game-header">
-                <span style="font-weight:bold; color:#bdc1c6">Arcade</span>
+                <span id="gameTitle" style="font-weight:bold; color:#bdc1c6">Arcade Menu</span>
                 <div class="close-game" onclick="closeGameModal()">✕</div>
             </div>
-            
             <div class="game-menu" id="gameMenu">
-                <button class="game-btn" onclick="initMinesweeper()">💣 Сапер</button>
-                <button class="game-btn" onclick="initSnake()">🐍 Змейка</button>
-                <button class="game-btn" onclick="initGeo()">🌍 GeoGuessr</button>
+                <button class="game-btn" onclick="initMinesweeper()">💣 Mines</button>
+                <button class="game-btn" onclick="initSnake()">🐍 Snake</button>
+                <button class="game-btn" onclick="initGeo()">🌍 GeoGuess</button>
             </div>
-
             <div class="game-content" id="snakeContainer">
-                <button class="back-btn" onclick="backToMenu()">← Меню</button>
+                <button class="back-btn" onclick="backToMenu()">← Back</button>
                 <canvas id="snake-canvas" width="400" height="300"></canvas>
-                <p style="font-size: 12px; color:#5f6368; margin-top:5px;">Управление: Стрелочки</p>
             </div>
-
             <div class="game-content" id="minesContainer">
-                <button class="back-btn" onclick="backToMenu()">← Меню</button>
-                <div style="margin-bottom: 5px;" id="mines-status">Полей: 10x10 | Мин: 15</div>
+                <button class="back-btn" onclick="backToMenu()">← Back</button>
                 <div class="mines-grid" id="minesGrid"></div>
             </div>
-
             <div class="game-content" id="geoContainer">
-                <button class="back-btn" onclick="backToMenu()">← Меню</button>
-                <div class="score-board" id="geoScore">Счет: 0</div>
-                <div class="geo-card">
-                    <div class="geo-flag" id="geoFlag">🏳️</div>
-                    <div class="geo-options" id="geoOptions"></div>
-                </div>
+                <button class="back-btn" onclick="backToMenu()">← Back</button>
+                <div id="geoScore" style="color:#8ab4f8; margin-bottom:10px;">Score: 0</div>
+                <div class="geo-flag-container" id="geoFlag"></div>
+                <div class="geo-options" id="geoOptions"></div>
             </div>
         </div>
     </div>
 
 <script>
-    /* ПЕРЕВОДЧИК И ФИЗИКА */
+    // ПЕРЕВОДЧИК
     const beerMap = {'А': 'влдаолдцт3894', 'Б': '78ем9т4325243895тм72', 'В': 'атдлжиыфвеи0653', 'Г': 'тмщышевз34', 'Д': '34три537уиадлвы', 'Е': 'ь02м392м7', 'Ё': 'ь02м392м8', 'Ж': 'тт32м4о35т2', 'З': '3и45рт647ь8', 'И': '49и357т7т50иц7', 'Й': '49и357т7т50иц8', 'К': 'тй89и5446', 'Л': '7ьт47тть75', 'М': '7ь65бь47456ь7', 'Н': '8674ь5б867куекв', 'О': 'ь7т3567о5643654', 'П': 'т76376534ывтн', 'Р': 'вьтапгь67767ь5ке', 'С': 'пиавые54', 'Т': 'т65436отекнр', 'У': '6т54у65т6цу3', 'Ф': '74567о5тнит7546', 'Х': '547т456756т85', 'Ц': '7ль564л7от546р546', 'Ч': '87645ьт5куьлнаенген', 'Ш': 'аеткуну45654н', 'Щ': 'аеткуну45654н1', 'Ъ': '22987т6и0222лвдпфы1', 'Ы': '22987т6и0222лвдпфы3', 'Ь': '22987т6и0222лвдпфы2', 'Э': '638ь54и96346и0345', 'Ю': 'е0ц4539и587т3450879345', 'Я': 'еьекутнтек6ня', 'A': 'z99x11v', 'B': 'bb77beer00', 'C': 'c_shakal_99', 'D': 'd88_vottak_2', 'E': 'e_pivo_1', 'F': 'f_44_ff', 'G': 'g_top_g_7', 'H': 'h_hh_888', 'I': 'i_eye_111', 'J': 'j_jack_55', 'K': 'k_kick_0', 'L': 'l_lose_77', 'M': 'm_m_444555', 'N': 'n_nitro_9', 'O': 'o_zero_00', 'P': 'p_pub_4', 'Q': 'q_quest_1', 'R': 'r_root_66', 'S': 's_snk_33', 'T': 't_tank_4', 'U': 'u_unit_22', 'V': 'v_v_666', 'W': 'w_wow_7', 'X': 'x_xxx_0', 'Y': 'y_yes_9', 'Z': 'z_zzz_1'};
     const reverseCodes = Object.entries(beerMap).map(([letter, code]) => ({ letter, code })).sort((a, b) => b.code.length - a.code.length);
     let isBeerToText = false;
@@ -293,319 +268,154 @@
     }
 
     function clearAll() { document.getElementById('input-text').value = ''; document.getElementById('output-field').innerText = ''; }
-
-    function copyResult() { 
-        const text = document.getElementById('output-field').innerText; 
+    function copyResult() {
+        const text = document.getElementById('output-field').innerText;
         if (!text) return;
         navigator.clipboard.writeText(text).then(() => {
             const btn = document.getElementById('copy-btn');
             const svg = document.getElementById('copy-icon');
-            const originalIcon = svg.innerHTML;
+            const old = svg.innerHTML;
             svg.innerHTML = '<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>';
-            btn.style.color = '#8ab4f8';
-            setTimeout(() => { svg.innerHTML = originalIcon; btn.style.color = ''; }, 2000);
+            setTimeout(() => svg.innerHTML = old, 2000);
         });
     }
 
-    /* --- GRAVITY ENGINE --- */
-    let gravityActive = false;
-    let physicsObjects = [];
-    let dragTarget = null;
-    let dragOffset = { x: 0, y: 0 };
-    let mouse = { x: 0, y: 0 };
-    let prevMouse = { x: 0, y: 0 };
-
-    function startGravity() {
-        if (gravityActive) return;
-        gravityActive = true;
-        // Exclude modal from gravity
-        const selectors = ['.title-container', '.input-panel', '.panel:last-child', '.translator-container', '.header-tabs > div', '.swap-icon', '.old-version-btn'];
-        let elements = [];
-        selectors.forEach(s => document.querySelectorAll(s).forEach(el => elements.push(el)));
-
-        elements.forEach(el => {
-            const rect = el.getBoundingClientRect();
-            physicsObjects.push({
-                el: el, x: rect.left, y: rect.top, w: rect.width, h: rect.height,
-                vx: (Math.random() - 0.5) * 5, vy: 0, rot: 0, vrot: 0,
-                bounciness: 0.4, isDragging: false
-            });
-        });
-
-        physicsObjects.forEach(obj => {
-            const el = obj.el;
-            el.style.width = obj.w + 'px'; el.style.height = obj.h + 'px';
-            el.style.position = 'absolute'; el.style.left = '0'; el.style.top = '0';
-            el.style.margin = '0'; el.style.zIndex = '1000';
-            document.body.appendChild(el);
-        });
-
-        window.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
-        window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
-        window.addEventListener('mouseup', handleEnd);
-        window.addEventListener('touchstart', e => handleStart(e.touches[0].clientX, e.touches[0].clientY));
-        window.addEventListener('touchmove', e => handleMove(e.touches[0].clientX, e.touches[0].clientY));
-        window.addEventListener('touchend', handleEnd);
-        requestAnimationFrame(updatePhysics);
-    }
-
-    function handleStart(x, y) {
-        // Prevent drag if clicking inside modal
-        if (document.getElementById('gameModal').style.display === 'flex') return;
-
-        mouse.x = prevMouse.x = x; mouse.y = prevMouse.y = y;
-        for (let i = physicsObjects.length - 1; i >= 0; i--) {
-            const o = physicsObjects[i];
-            if (x > o.x && x < o.x + o.w && y > o.y && y < o.y + o.h) {
-                dragTarget = o; o.isDragging = true;
-                dragOffset.x = x - o.x; dragOffset.y = y - o.y;
-                o.el.style.zIndex = '2000';
-                break;
-            }
-        }
-    }
-
-    function handleMove(x, y) { mouse.x = x; mouse.y = y; }
-    function handleEnd() {
-        if (dragTarget) {
-            dragTarget.isDragging = false;
-            dragTarget.vx = (mouse.x - prevMouse.x) * 0.8;
-            dragTarget.vy = (mouse.y - prevMouse.y) * 0.8;
-            dragTarget.vrot = dragTarget.vx * 0.05;
-            dragTarget.el.style.zIndex = '1000';
-            dragTarget = null;
-        }
-    }
-
-    function updatePhysics() {
-        const sw = window.innerWidth;
-        const sh = window.innerHeight;
-        physicsObjects.forEach(o => {
-            if (o.isDragging) {
-                o.x = mouse.x - dragOffset.x; o.y = mouse.y - dragOffset.y;
-            } else {
-                o.vy += 0.4; o.vx *= 0.99; o.vrot *= 0.98;
-                o.x += o.vx; o.y += o.vy; o.rot += o.vrot;
-                if (o.y + o.h > sh) { o.y = sh - o.h; o.vy *= -o.bounciness; o.vx *= 0.8; o.vrot *= 0.8; }
-                if (o.x < 0 || o.x + o.w > sw) { o.x = o.x < 0 ? 0 : sw - o.w; o.vx *= -o.bounciness; }
-            }
-            o.el.style.transform = `translate(${o.x}px, ${o.y}px) rotate(${o.rot}deg)`;
-        });
-        prevMouse.x = mouse.x; prevMouse.y = mouse.y;
-        requestAnimationFrame(updatePhysics);
-    }
-
-    /* --- GAME LOGIC --- */
+    // GAMES SYSTEM
     const modal = document.getElementById('gameModal');
-    const gameMenu = document.getElementById('gameMenu');
-    let snakeInterval, snakeCtx;
+    const menu = document.getElementById('gameMenu');
+    let snakeInt;
 
     function openGameModal() { modal.style.display = 'flex'; backToMenu(); }
-    function closeGameModal() { 
-        modal.style.display = 'none'; 
-        clearInterval(snakeInterval); 
-    }
-    
+    function closeGameModal() { modal.style.display = 'none'; clearInterval(snakeInt); }
     function backToMenu() {
-        gameMenu.style.display = 'grid';
-        document.getElementById('snakeContainer').style.display = 'none';
-        document.getElementById('minesContainer').style.display = 'none';
-        document.getElementById('geoContainer').style.display = 'none';
-        clearInterval(snakeInterval);
+        menu.style.display = 'grid';
+        ['snakeContainer', 'minesContainer', 'geoContainer'].forEach(id => document.getElementById(id).style.display = 'none');
+        clearInterval(snakeInt);
     }
 
-    // --- SNAKE ---
-    function initSnake() {
-        gameMenu.style.display = 'none';
-        document.getElementById('snakeContainer').style.display = 'flex';
-        const canvas = document.getElementById('snake-canvas');
-        snakeCtx = canvas.getContext('2d');
-        
-        let tile = 20;
-        let snake = [{x: 10 * tile, y: 10 * tile}];
-        let food = {x: Math.floor(Math.random()*20)*tile, y: Math.floor(Math.random()*15)*tile};
-        let dx = tile, dy = 0;
-        let score = 0;
-
-        document.addEventListener('keydown', changeDirection);
-        function changeDirection(event) {
-            const LEFT = 37, RIGHT = 39, UP = 38, DOWN = 40;
-            const k = event.keyCode;
-            if (k === LEFT && dx !== tile) { dx = -tile; dy = 0; }
-            if (k === UP && dy !== tile) { dx = 0; dy = -tile; }
-            if (k === RIGHT && dx !== -tile) { dx = tile; dy = 0; }
-            if (k === DOWN && dy !== -tile) { dx = 0; dy = tile; }
-        }
-
-        function drawSnake() {
-            snakeCtx.fillStyle = '#000';
-            snakeCtx.fillRect(0,0, canvas.width, canvas.height);
-            
-            // Food
-            snakeCtx.fillStyle = '#e53935';
-            snakeCtx.fillRect(food.x, food.y, tile, tile);
-
-            // Snake
-            snakeCtx.fillStyle = '#8ab4f8';
-            snake.forEach(s => snakeCtx.fillRect(s.x, s.y, tile-2, tile-2));
-
-            // Logic
-            let head = {x: snake[0].x + dx, y: snake[0].y + dy};
-
-            if (head.x === food.x && head.y === food.y) {
-                score++;
-                food = {x: Math.floor(Math.random()*20)*tile, y: Math.floor(Math.random()*15)*tile};
-            } else {
-                snake.pop();
-            }
-
-            // Collapse
-            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height || 
-                snake.some(s => s.x === head.x && s.y === head.y)) {
-                clearInterval(snakeInterval);
-                alert("Game Over! Score: " + score);
-                backToMenu();
-                return;
-            }
-
-            snake.unshift(head);
-        }
-        clearInterval(snakeInterval);
-        snakeInterval = setInterval(drawSnake, 100);
-    }
-
-    // --- MINESWEEPER ---
-    function initMinesweeper() {
-        gameMenu.style.display = 'none';
-        document.getElementById('minesContainer').style.display = 'flex';
-        const grid = document.getElementById('minesGrid');
-        const rows = 10, cols = 10, mines = 15;
-        grid.style.gridTemplateColumns = `repeat(${cols}, 30px)`;
-        grid.innerHTML = '';
-
-        let cells = [];
-        // Init cells
-        for(let i=0; i<rows*cols; i++) {
-            const div = document.createElement('div');
-            div.className = 'mine-cell';
-            div.dataset.id = i;
-            div.onclick = () => clickCell(i);
-            div.oncontextmenu = (e) => { e.preventDefault(); div.innerText = div.innerText === '🚩' ? '' : '🚩'; };
-            grid.appendChild(div);
-            cells.push({ element: div, mine: false, revealed: false, count: 0 });
-        }
-
-        // Place mines
-        let placed = 0;
-        while(placed < mines) {
-            let idx = Math.floor(Math.random() * cells.length);
-            if(!cells[idx].mine) { cells[idx].mine = true; placed++; }
-        }
-
-        // Calculate numbers
-        for(let i=0; i<rows*cols; i++) {
-            if(cells[i].mine) continue;
-            let total = 0;
-            const r = Math.floor(i/cols), c = i%cols;
-            for(let dr=-1; dr<=1; dr++) {
-                for(let dc=-1; dc<=1; dc++) {
-                    let nr = r+dr, nc = c+dc;
-                    if(nr>=0 && nr<rows && nc>=0 && nc<cols) {
-                        if(cells[nr*cols+nc].mine) total++;
-                    }
-                }
-            }
-            cells[i].count = total;
-        }
-
-        function clickCell(idx) {
-            let c = cells[idx];
-            if(c.revealed || c.element.innerText === '🚩') return;
-            c.revealed = true;
-            c.element.classList.add('revealed');
-
-            if(c.mine) {
-                c.element.classList.add('boom');
-                c.element.innerText = '💣';
-                alert('BOOM!');
-                cells.forEach(cl => {
-                    if(cl.mine) cl.element.innerText = '💣';
-                });
-            } else {
-                if(c.count > 0) {
-                    c.element.innerText = c.count;
-                    // Colors
-                    const colors = ['#8ab4f8', '#81c995', '#f28b82', '#fdcb40'];
-                    c.element.style.color = colors[(c.count-1)%4];
-                } else {
-                    // Flood fill
-                    const r = Math.floor(idx/cols), cx = idx%cols;
-                    for(let dr=-1; dr<=1; dr++) {
-                        for(let dc=-1; dc<=1; dc++) {
-                            let nr = r+dr, nc = cx+dc;
-                            if(nr>=0 && nr<rows && nc>=0 && nc<cols) {
-                                clickCell(nr*cols+nc);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // --- GEOGUESSR (Lite) ---
+    // GEOGUESSR FIXED (IMAGES INSTEAD OF EMOJI)
     const countries = [
-        {name: "США", flag: "🇺🇸"}, {name: "Канада", flag: "🇨🇦"}, {name: "Бразилия", flag: "🇧🇷"},
-        {name: "Франция", flag: "🇫🇷"}, {name: "Германия", flag: "🇩🇪"}, {name: "Япония", flag: "🇯🇵"},
-        {name: "Китай", flag: "🇨🇳"}, {name: "Россия", flag: "🇷🇺"}, {name: "Италия", flag: "🇮🇹"},
-        {name: "Испания", flag: "🇪🇸"}, {name: "Австралия", flag: "🇦🇺"}, {name: "Индия", flag: "🇮🇳"},
-        {name: "Турция", flag: "🇹🇷"}, {name: "Мексика", flag: "🇲🇽"}, {name: "Египет", flag: "🇪🇬"},
-        {name: "Аргентина", flag: "🇦🇷"}, {name: "Южная Корея", flag: "🇰🇷"}, {name: "Нидерланды", flag: "🇳🇱"}
+        {name: "США", code: "us"}, {name: "Россия", code: "ru"}, {name: "Франция", code: "fr"},
+        {name: "Германия", code: "de"}, {name: "Япония", code: "jp"}, {name: "Бразилия", code: "br"},
+        {name: "Канада", code: "ca"}, {name: "Италия", code: "it"}, {name: "Испания", code: "es"},
+        {name: "Китай", code: "cn"}, {name: "Великобритания", code: "gb"}, {name: "Австралия", code: "au"}
     ];
-    let geoScoreVal = 0;
+    let geoScore = 0;
 
     function initGeo() {
-        gameMenu.style.display = 'none';
+        menu.style.display = 'none';
         document.getElementById('geoContainer').style.display = 'flex';
-        geoScoreVal = 0;
-        nextGeoRound();
+        geoScore = 0;
+        nextGeo();
     }
 
-    function nextGeoRound() {
-        document.getElementById('geoScore').innerText = "Счет: " + geoScoreVal;
+    function nextGeo() {
+        document.getElementById('geoScore').innerText = "Score: " + geoScore;
         const correct = countries[Math.floor(Math.random() * countries.length)];
-        document.getElementById('geoFlag').innerText = correct.flag;
+        const flagBox = document.getElementById('geoFlag');
+        flagBox.innerHTML = `<img src="https://flagcdn.com/w320/${correct.code}.png" class="geo-flag-img">`;
         
-        // Generate options
         let opts = [correct];
         while(opts.length < 4) {
-            let rand = countries[Math.floor(Math.random() * countries.length)];
-            if(!opts.includes(rand)) opts.push(rand);
+            let r = countries[Math.floor(Math.random()*countries.length)];
+            if(!opts.includes(r)) opts.push(r);
         }
         opts.sort(() => Math.random() - 0.5);
 
-        const container = document.getElementById('geoOptions');
-        container.innerHTML = '';
-        opts.forEach(c => {
-            let btn = document.createElement('button');
-            btn.className = 'game-btn';
-            btn.innerText = c.name;
-            btn.onclick = () => {
-                if(c === correct) {
-                    geoScoreVal++;
-                    btn.style.background = '#81c995';
-                    setTimeout(nextGeoRound, 500);
-                } else {
-                    btn.style.background = '#e53935';
-                    geoScoreVal = 0;
-                    setTimeout(() => alert("Неверно! Это " + correct.name), 100);
-                    setTimeout(nextGeoRound, 1000);
-                }
+        const optBox = document.getElementById('geoOptions');
+        optBox.innerHTML = '';
+        opts.forEach(o => {
+            const b = document.createElement('button');
+            b.className = 'game-btn';
+            b.innerText = o.name;
+            b.onclick = () => {
+                if(o === correct) { geoScore++; nextGeo(); }
+                else { alert("Game Over! It was " + correct.name); geoScore = 0; nextGeo(); }
             };
-            container.appendChild(btn);
+            optBox.appendChild(b);
         });
     }
 
+    // SNAKE
+    function initSnake() {
+        menu.style.display = 'none';
+        document.getElementById('snakeContainer').style.display = 'flex';
+        const canvas = document.getElementById('snake-canvas');
+        const ctx = canvas.getContext('2d');
+        let s = [{x:200, y:150}], f = {x:100, y:100}, d = 'R', sc = 0;
+        
+        document.onkeydown = e => {
+            if(e.key==='ArrowUp' && d!=='D') d='U';
+            if(e.key==='ArrowDown' && d!=='U') d='D';
+            if(e.key==='ArrowLeft' && d!=='R') d='L';
+            if(e.key==='ArrowRight' && d!=='L') d='R';
+        };
+
+        snakeInt = setInterval(() => {
+            let h = {...s[0]};
+            if(d==='U') h.y-=10; if(d==='D') h.y+=10; if(d==='L') h.x-=10; if(d==='R') h.x+=10;
+            if(h.x<0||h.x>=400||h.y<0||h.y>=300||s.some(p=>p.x===h.x&&p.y===h.y)) { clearInterval(snakeInt); alert("Score: "+sc); backToMenu(); }
+            s.unshift(h);
+            if(h.x===f.x && h.y===f.y) { sc++; f={x:Math.floor(Math.random()*39)*10, y:Math.floor(Math.random()*29)*10}; }
+            else s.pop();
+
+            ctx.fillStyle = '#000'; ctx.fillRect(0,0,400,300);
+            ctx.fillStyle = '#f00'; ctx.fillRect(f.x,f.y,9,9);
+            ctx.fillStyle = '#8ab4f8'; s.forEach(p=>ctx.fillRect(p.x,p.y,9,9));
+        }, 100);
+    }
+
+    // MINES
+    function initMinesweeper() {
+        menu.style.display = 'none';
+        document.getElementById('minesContainer').style.display = 'flex';
+        const grid = document.getElementById('minesGrid');
+        grid.style.gridTemplateColumns = 'repeat(10, 30px)';
+        grid.innerHTML = '';
+        let m = Array(100).fill(0).map((_,i) => ({i, mine: Math.random()<0.15, rev: false}));
+        
+        m.forEach(c => {
+            const d = document.createElement('div');
+            d.className = 'mine-cell';
+            d.onclick = () => {
+                if(c.mine) { d.classList.add('boom'); alert("BOOM!"); backToMenu(); }
+                else { 
+                    d.classList.add('revealed'); 
+                    let near = 0;
+                    [ -11, -10, -9, -1, 1, 9, 10, 11 ].forEach(off => {
+                        if(m[c.i+off]?.mine) near++;
+                    });
+                    d.innerText = near || '';
+                }
+            };
+            grid.appendChild(d);
+        });
+    }
+
+    // GRAVITY ENGINE (RE-INIT FOR NEW ELEMENTS)
+    let gravityActive = false;
+    let physicsObjects = [];
+    function startGravity() {
+        if (gravityActive) return;
+        gravityActive = true;
+        const els = document.querySelectorAll('.title-container, .translator-container');
+        els.forEach(el => {
+            const r = el.getBoundingClientRect();
+            physicsObjects.push({ el, x: r.left, y: r.top, w: r.width, h: r.height, vx: Math.random()*10-5, vy: 0, rot: 0 });
+            el.style.position = 'fixed'; el.style.width = r.width+'px'; el.style.margin = '0'; el.style.zIndex = '9999';
+        });
+        requestAnimationFrame(updatePhys);
+    }
+
+    function updatePhys() {
+        physicsObjects.forEach(o => {
+            o.vy += 0.5; o.x += o.vx; o.y += o.vy;
+            if(o.y+o.h > window.innerHeight) { o.y = window.innerHeight-o.h; o.vy *= -0.5; }
+            if(o.x<0 || o.x+o.w > window.innerWidth) o.vx *= -1;
+            o.el.style.top = o.y+'px'; o.el.style.left = o.x+'px';
+        });
+        requestAnimationFrame(updatePhys);
+    }
 </script>
 </body>
 </html>
