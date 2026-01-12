@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beer Translate</title>
+    <title>Beer Translate & Games</title>
     <style>
         body {
             background-color: #121316;
@@ -30,7 +30,6 @@
 
         h1 { font-weight: 400; font-size: 32px; color: #bdc1c6; margin: 0; }
         
-        /* Стили для секретных ссылок в буквах B и r */
         .secret-link { 
             color: inherit; 
             text-decoration: none; 
@@ -70,8 +69,14 @@
         .tab.inactive { border-bottom: 2px solid transparent; color: #9aa0a6; }
         .swap-icon { margin: 0 20px; color: #9aa0a6; cursor: pointer; font-size: 24px; }
 
-        .gravity-tab {
+        /* Кнопки справа */
+        .right-tabs {
             margin-left: auto;
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-tab {
             color: #9aa0a6;
             font-size: 13px;
             text-transform: uppercase;
@@ -79,9 +84,11 @@
             cursor: pointer;
             padding: 8px 12px;
             border-radius: 4px;
+            transition: background 0.2s;
         }
         
-        .gravity-tab:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .action-tab:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .game-tab { color: #8ab4f8; }
 
         .main-panels { display: flex; flex-wrap: wrap; }
         .panel { flex: 1; min-width: 300px; min-height: 250px; padding: 25px; position: relative; display: flex; flex-direction: column; background: #1e1f21; box-sizing: border-box;}
@@ -123,6 +130,62 @@
 
         .copy-btn { background: transparent; border: none; color: #9aa0a6; cursor: pointer; padding: 8px; border-radius: 50%; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
         .copy-btn svg { width: 24px; height: 24px; fill: currentColor; }
+
+        /* --- STYLES FOR GAMES MODAL --- */
+        .modal-overlay {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 5000;
+            justify-content: center; align-items: center;
+        }
+        .game-window {
+            background: #1e1f21;
+            border: 1px solid #3c4043;
+            border-radius: 12px;
+            width: 500px;
+            max-width: 90%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
+        .game-header {
+            padding: 15px; border-bottom: 1px solid #3c4043;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .game-menu { padding: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .game-btn {
+            background: #303134; color: #e8eaed; border: none; padding: 15px;
+            border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;
+        }
+        .game-btn:hover { background: #8ab4f8; color: #000; }
+        .close-game { cursor: pointer; color: #9aa0a6; font-size: 24px; }
+        
+        .game-content { padding: 20px; display: none; flex-direction: column; align-items: center; min-height: 300px; }
+        
+        /* Snake Styles */
+        #snake-canvas { background: #000; border: 2px solid #3c4043; }
+        
+        /* Minesweeper Styles */
+        .mines-grid { display: grid; gap: 2px; background: #3c4043; border: 2px solid #3c4043; user-select: none; }
+        .mine-cell { 
+            width: 30px; height: 30px; background: #bdc1c6; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; cursor: pointer; font-size: 14px; color: #000;
+        }
+        .mine-cell.revealed { background: #303134; color: #fff; }
+        .mine-cell.boom { background: #e53935; }
+
+        /* Geo Styles */
+        .geo-card { text-align: center; width: 100%; }
+        .geo-flag { font-size: 100px; margin: 20px 0; }
+        .geo-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+        .score-board { margin-bottom: 10px; color: #8ab4f8; }
+
+        .back-btn { margin-bottom: 10px; align-self: flex-start; background: none; border: none; color: #9aa0a6; cursor: pointer; }
+        .back-btn:hover { color: #fff; }
+
     </style>
 </head>
 <body>
@@ -139,7 +202,11 @@
             <div class="tab" id="left-label">Текст</div>
             <div class="swap-icon" onclick="toggleMode()">⇄</div>
             <div class="tab inactive" id="right-label">Пивной язык</div>
-            <div class="gravity-tab" onclick="startGravity()">Gravity</div>
+            
+            <div class="right-tabs">
+                <div class="action-tab game-tab" onclick="openGameModal()">Games</div>
+                <div class="action-tab" onclick="startGravity()">Gravity</div>
+            </div>
         </div>
 
         <div class="main-panels">
@@ -159,8 +226,44 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="gameModal">
+        <div class="game-window">
+            <div class="game-header">
+                <span style="font-weight:bold; color:#bdc1c6">Arcade</span>
+                <div class="close-game" onclick="closeGameModal()">✕</div>
+            </div>
+            
+            <div class="game-menu" id="gameMenu">
+                <button class="game-btn" onclick="initMinesweeper()">💣 Сапер</button>
+                <button class="game-btn" onclick="initSnake()">🐍 Змейка</button>
+                <button class="game-btn" onclick="initGeo()">🌍 GeoGuessr</button>
+            </div>
+
+            <div class="game-content" id="snakeContainer">
+                <button class="back-btn" onclick="backToMenu()">← Меню</button>
+                <canvas id="snake-canvas" width="400" height="300"></canvas>
+                <p style="font-size: 12px; color:#5f6368; margin-top:5px;">Управление: Стрелочки</p>
+            </div>
+
+            <div class="game-content" id="minesContainer">
+                <button class="back-btn" onclick="backToMenu()">← Меню</button>
+                <div style="margin-bottom: 5px;" id="mines-status">Полей: 10x10 | Мин: 15</div>
+                <div class="mines-grid" id="minesGrid"></div>
+            </div>
+
+            <div class="game-content" id="geoContainer">
+                <button class="back-btn" onclick="backToMenu()">← Меню</button>
+                <div class="score-board" id="geoScore">Счет: 0</div>
+                <div class="geo-card">
+                    <div class="geo-flag" id="geoFlag">🏳️</div>
+                    <div class="geo-options" id="geoOptions"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 <script>
-    /* ПЕРЕВОДЧИК И ФИЗИКА (БЕЗ ИЗМЕНЕНИЙ) */
+    /* ПЕРЕВОДЧИК И ФИЗИКА */
     const beerMap = {'А': 'влдаолдцт3894', 'Б': '78ем9т4325243895тм72', 'В': 'атдлжиыфвеи0653', 'Г': 'тмщышевз34', 'Д': '34три537уиадлвы', 'Е': 'ь02м392м7', 'Ё': 'ь02м392м8', 'Ж': 'тт32м4о35т2', 'З': '3и45рт647ь8', 'И': '49и357т7т50иц7', 'Й': '49и357т7т50иц8', 'К': 'тй89и5446', 'Л': '7ьт47тть75', 'М': '7ь65бь47456ь7', 'Н': '8674ь5б867куекв', 'О': 'ь7т3567о5643654', 'П': 'т76376534ывтн', 'Р': 'вьтапгь67767ь5ке', 'С': 'пиавые54', 'Т': 'т65436отекнр', 'У': '6т54у65т6цу3', 'Ф': '74567о5тнит7546', 'Х': '547т456756т85', 'Ц': '7ль564л7от546р546', 'Ч': '87645ьт5куьлнаенген', 'Ш': 'аеткуну45654н', 'Щ': 'аеткуну45654н1', 'Ъ': '22987т6и0222лвдпфы1', 'Ы': '22987т6и0222лвдпфы3', 'Ь': '22987т6и0222лвдпфы2', 'Э': '638ь54и96346и0345', 'Ю': 'е0ц4539и587т3450879345', 'Я': 'еьекутнтек6ня', 'A': 'z99x11v', 'B': 'bb77beer00', 'C': 'c_shakal_99', 'D': 'd88_vottak_2', 'E': 'e_pivo_1', 'F': 'f_44_ff', 'G': 'g_top_g_7', 'H': 'h_hh_888', 'I': 'i_eye_111', 'J': 'j_jack_55', 'K': 'k_kick_0', 'L': 'l_lose_77', 'M': 'm_m_444555', 'N': 'n_nitro_9', 'O': 'o_zero_00', 'P': 'p_pub_4', 'Q': 'q_quest_1', 'R': 'r_root_66', 'S': 's_snk_33', 'T': 't_tank_4', 'U': 'u_unit_22', 'V': 'v_v_666', 'W': 'w_wow_7', 'X': 'x_xxx_0', 'Y': 'y_yes_9', 'Z': 'z_zzz_1'};
     const reverseCodes = Object.entries(beerMap).map(([letter, code]) => ({ letter, code })).sort((a, b) => b.code.length - a.code.length);
     let isBeerToText = false;
@@ -204,6 +307,7 @@
         });
     }
 
+    /* --- GRAVITY ENGINE --- */
     let gravityActive = false;
     let physicsObjects = [];
     let dragTarget = null;
@@ -214,6 +318,7 @@
     function startGravity() {
         if (gravityActive) return;
         gravityActive = true;
+        // Exclude modal from gravity
         const selectors = ['.title-container', '.input-panel', '.panel:last-child', '.translator-container', '.header-tabs > div', '.swap-icon', '.old-version-btn'];
         let elements = [];
         selectors.forEach(s => document.querySelectorAll(s).forEach(el => elements.push(el)));
@@ -241,10 +346,13 @@
         window.addEventListener('touchstart', e => handleStart(e.touches[0].clientX, e.touches[0].clientY));
         window.addEventListener('touchmove', e => handleMove(e.touches[0].clientX, e.touches[0].clientY));
         window.addEventListener('touchend', handleEnd);
-        requestAnimationFrame(update);
+        requestAnimationFrame(updatePhysics);
     }
 
     function handleStart(x, y) {
+        // Prevent drag if clicking inside modal
+        if (document.getElementById('gameModal').style.display === 'flex') return;
+
         mouse.x = prevMouse.x = x; mouse.y = prevMouse.y = y;
         for (let i = physicsObjects.length - 1; i >= 0; i--) {
             const o = physicsObjects[i];
@@ -269,7 +377,7 @@
         }
     }
 
-    function update() {
+    function updatePhysics() {
         const sw = window.innerWidth;
         const sh = window.innerHeight;
         physicsObjects.forEach(o => {
@@ -284,8 +392,220 @@
             o.el.style.transform = `translate(${o.x}px, ${o.y}px) rotate(${o.rot}deg)`;
         });
         prevMouse.x = mouse.x; prevMouse.y = mouse.y;
-        requestAnimationFrame(update);
+        requestAnimationFrame(updatePhysics);
     }
+
+    /* --- GAME LOGIC --- */
+    const modal = document.getElementById('gameModal');
+    const gameMenu = document.getElementById('gameMenu');
+    let snakeInterval, snakeCtx;
+
+    function openGameModal() { modal.style.display = 'flex'; backToMenu(); }
+    function closeGameModal() { 
+        modal.style.display = 'none'; 
+        clearInterval(snakeInterval); 
+    }
+    
+    function backToMenu() {
+        gameMenu.style.display = 'grid';
+        document.getElementById('snakeContainer').style.display = 'none';
+        document.getElementById('minesContainer').style.display = 'none';
+        document.getElementById('geoContainer').style.display = 'none';
+        clearInterval(snakeInterval);
+    }
+
+    // --- SNAKE ---
+    function initSnake() {
+        gameMenu.style.display = 'none';
+        document.getElementById('snakeContainer').style.display = 'flex';
+        const canvas = document.getElementById('snake-canvas');
+        snakeCtx = canvas.getContext('2d');
+        
+        let tile = 20;
+        let snake = [{x: 10 * tile, y: 10 * tile}];
+        let food = {x: Math.floor(Math.random()*20)*tile, y: Math.floor(Math.random()*15)*tile};
+        let dx = tile, dy = 0;
+        let score = 0;
+
+        document.addEventListener('keydown', changeDirection);
+        function changeDirection(event) {
+            const LEFT = 37, RIGHT = 39, UP = 38, DOWN = 40;
+            const k = event.keyCode;
+            if (k === LEFT && dx !== tile) { dx = -tile; dy = 0; }
+            if (k === UP && dy !== tile) { dx = 0; dy = -tile; }
+            if (k === RIGHT && dx !== -tile) { dx = tile; dy = 0; }
+            if (k === DOWN && dy !== -tile) { dx = 0; dy = tile; }
+        }
+
+        function drawSnake() {
+            snakeCtx.fillStyle = '#000';
+            snakeCtx.fillRect(0,0, canvas.width, canvas.height);
+            
+            // Food
+            snakeCtx.fillStyle = '#e53935';
+            snakeCtx.fillRect(food.x, food.y, tile, tile);
+
+            // Snake
+            snakeCtx.fillStyle = '#8ab4f8';
+            snake.forEach(s => snakeCtx.fillRect(s.x, s.y, tile-2, tile-2));
+
+            // Logic
+            let head = {x: snake[0].x + dx, y: snake[0].y + dy};
+
+            if (head.x === food.x && head.y === food.y) {
+                score++;
+                food = {x: Math.floor(Math.random()*20)*tile, y: Math.floor(Math.random()*15)*tile};
+            } else {
+                snake.pop();
+            }
+
+            // Collapse
+            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height || 
+                snake.some(s => s.x === head.x && s.y === head.y)) {
+                clearInterval(snakeInterval);
+                alert("Game Over! Score: " + score);
+                backToMenu();
+                return;
+            }
+
+            snake.unshift(head);
+        }
+        clearInterval(snakeInterval);
+        snakeInterval = setInterval(drawSnake, 100);
+    }
+
+    // --- MINESWEEPER ---
+    function initMinesweeper() {
+        gameMenu.style.display = 'none';
+        document.getElementById('minesContainer').style.display = 'flex';
+        const grid = document.getElementById('minesGrid');
+        const rows = 10, cols = 10, mines = 15;
+        grid.style.gridTemplateColumns = `repeat(${cols}, 30px)`;
+        grid.innerHTML = '';
+
+        let cells = [];
+        // Init cells
+        for(let i=0; i<rows*cols; i++) {
+            const div = document.createElement('div');
+            div.className = 'mine-cell';
+            div.dataset.id = i;
+            div.onclick = () => clickCell(i);
+            div.oncontextmenu = (e) => { e.preventDefault(); div.innerText = div.innerText === '🚩' ? '' : '🚩'; };
+            grid.appendChild(div);
+            cells.push({ element: div, mine: false, revealed: false, count: 0 });
+        }
+
+        // Place mines
+        let placed = 0;
+        while(placed < mines) {
+            let idx = Math.floor(Math.random() * cells.length);
+            if(!cells[idx].mine) { cells[idx].mine = true; placed++; }
+        }
+
+        // Calculate numbers
+        for(let i=0; i<rows*cols; i++) {
+            if(cells[i].mine) continue;
+            let total = 0;
+            const r = Math.floor(i/cols), c = i%cols;
+            for(let dr=-1; dr<=1; dr++) {
+                for(let dc=-1; dc<=1; dc++) {
+                    let nr = r+dr, nc = c+dc;
+                    if(nr>=0 && nr<rows && nc>=0 && nc<cols) {
+                        if(cells[nr*cols+nc].mine) total++;
+                    }
+                }
+            }
+            cells[i].count = total;
+        }
+
+        function clickCell(idx) {
+            let c = cells[idx];
+            if(c.revealed || c.element.innerText === '🚩') return;
+            c.revealed = true;
+            c.element.classList.add('revealed');
+
+            if(c.mine) {
+                c.element.classList.add('boom');
+                c.element.innerText = '💣';
+                alert('BOOM!');
+                cells.forEach(cl => {
+                    if(cl.mine) cl.element.innerText = '💣';
+                });
+            } else {
+                if(c.count > 0) {
+                    c.element.innerText = c.count;
+                    // Colors
+                    const colors = ['#8ab4f8', '#81c995', '#f28b82', '#fdcb40'];
+                    c.element.style.color = colors[(c.count-1)%4];
+                } else {
+                    // Flood fill
+                    const r = Math.floor(idx/cols), cx = idx%cols;
+                    for(let dr=-1; dr<=1; dr++) {
+                        for(let dc=-1; dc<=1; dc++) {
+                            let nr = r+dr, nc = cx+dc;
+                            if(nr>=0 && nr<rows && nc>=0 && nc<cols) {
+                                clickCell(nr*cols+nc);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // --- GEOGUESSR (Lite) ---
+    const countries = [
+        {name: "США", flag: "🇺🇸"}, {name: "Канада", flag: "🇨🇦"}, {name: "Бразилия", flag: "🇧🇷"},
+        {name: "Франция", flag: "🇫🇷"}, {name: "Германия", flag: "🇩🇪"}, {name: "Япония", flag: "🇯🇵"},
+        {name: "Китай", flag: "🇨🇳"}, {name: "Россия", flag: "🇷🇺"}, {name: "Италия", flag: "🇮🇹"},
+        {name: "Испания", flag: "🇪🇸"}, {name: "Австралия", flag: "🇦🇺"}, {name: "Индия", flag: "🇮🇳"},
+        {name: "Турция", flag: "🇹🇷"}, {name: "Мексика", flag: "🇲🇽"}, {name: "Египет", flag: "🇪🇬"},
+        {name: "Аргентина", flag: "🇦🇷"}, {name: "Южная Корея", flag: "🇰🇷"}, {name: "Нидерланды", flag: "🇳🇱"}
+    ];
+    let geoScoreVal = 0;
+
+    function initGeo() {
+        gameMenu.style.display = 'none';
+        document.getElementById('geoContainer').style.display = 'flex';
+        geoScoreVal = 0;
+        nextGeoRound();
+    }
+
+    function nextGeoRound() {
+        document.getElementById('geoScore').innerText = "Счет: " + geoScoreVal;
+        const correct = countries[Math.floor(Math.random() * countries.length)];
+        document.getElementById('geoFlag').innerText = correct.flag;
+        
+        // Generate options
+        let opts = [correct];
+        while(opts.length < 4) {
+            let rand = countries[Math.floor(Math.random() * countries.length)];
+            if(!opts.includes(rand)) opts.push(rand);
+        }
+        opts.sort(() => Math.random() - 0.5);
+
+        const container = document.getElementById('geoOptions');
+        container.innerHTML = '';
+        opts.forEach(c => {
+            let btn = document.createElement('button');
+            btn.className = 'game-btn';
+            btn.innerText = c.name;
+            btn.onclick = () => {
+                if(c === correct) {
+                    geoScoreVal++;
+                    btn.style.background = '#81c995';
+                    setTimeout(nextGeoRound, 500);
+                } else {
+                    btn.style.background = '#e53935';
+                    geoScoreVal = 0;
+                    setTimeout(() => alert("Неверно! Это " + correct.name), 100);
+                    setTimeout(nextGeoRound, 1000);
+                }
+            };
+            container.appendChild(btn);
+        });
+    }
+
 </script>
 </body>
 </html>
