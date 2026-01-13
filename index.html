@@ -26,6 +26,8 @@
             display: flex;
             align-items: baseline;
             gap: 10px;
+            /* Важно для гравитации */
+            transform-origin: center;
         }
 
         h1 { font-weight: 400; font-size: 32px; color: #bdc1c6; margin: 0; }
@@ -50,6 +52,9 @@
             flex-direction: column;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             position: relative;
+            /* Важно для гравитации */
+            transform-origin: center;
+            z-index: 10;
         }
 
         .header-tabs {
@@ -158,8 +163,8 @@
         
         #snake-canvas { background: #000; border: 2px solid #3c4043; max-width: 100%; }
         
-        .mines-grid { display: grid; gap: 2px; background: #3c4043; border: 2px solid #3c4043; }
-        .mine-cell { width: 30px; height: 30px; background: #bdc1c6; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; color: #000; }
+        .mines-grid { display: grid; gap: 2px; background: #3c4043; border: 2px solid #3c4043; margin-top: 10px; }
+        .mine-cell { width: 30px; height: 30px; background: #bdc1c6; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; color: #000; user-select: none; }
         .mine-cell.revealed { background: #303134; color: #fff; }
         .mine-cell.boom { background: #f44336; }
 
@@ -335,7 +340,6 @@
                     setTimeout(nextGeo, 200); 
                 } else { 
                     b.style.background = '#f44336';
-                    // Баг исправлен: задержка перед алертом для отрисовки цвета
                     setTimeout(() => {
                         alert("ИГРА ОКОНЧЕНА!\n\nЭто была страна: " + correct.name + "\nВаш итоговый счет: " + geoScoreVal);
                         geoScoreVal = 0; 
@@ -380,56 +384,148 @@
         }, 100);
     }
 
-    // --- САПЕР ---
+    // --- САПЕР (ИСПРАВЛЕННЫЙ) ---
     function initMinesweeper() {
         menu.style.display = 'none';
         document.getElementById('minesContainer').style.display = 'flex';
         const grid = document.getElementById('minesGrid');
         grid.style.gridTemplateColumns = 'repeat(10, 30px)';
         grid.innerHTML = '';
-        let m = Array(100).fill(0).map((_,i) => ({i, mine: Math.random()<0.15, rev: false}));
+        
+        const COLS = 10;
+        const ROWS = 10;
+        
+        // Создаем данные
+        let m = Array(COLS * ROWS).fill(0).map((_,i) => ({i, mine: Math.random()<0.15, rev: false}));
         
         m.forEach(c => {
             const d = document.createElement('div');
             d.className = 'mine-cell';
             d.onclick = () => {
-                if(c.mine) { d.classList.add('boom'); alert("БА-БАХ! Вы подорвались."); backToMenu(); }
+                if (c.rev) return;
+                
+                if(c.mine) { 
+                    d.classList.add('boom'); 
+                    alert("БА-БАХ! Вы подорвались."); 
+                    backToMenu(); 
+                }
                 else { 
+                    c.rev = true;
                     d.classList.add('revealed'); 
+                    
+                    // --- ИСПРАВЛЕННАЯ ЛОГИКА СОСЕДЕЙ ---
                     let near = 0;
-                    [ -11, -10, -9, -1, 1, 9, 10, 11 ].forEach(off => {
-                        if(m[c.i+off]?.mine) near++;
-                    });
-                    d.innerText = near || '';
+                    const row = Math.floor(c.i / COLS);
+                    const col = c.i % COLS;
+                    
+                    // Проверяем квадрат 3x3 вокруг клетки
+                    for (let x = -1; x <= 1; x++) {
+                        for (let y = -1; y <= 1; y++) {
+                            if (x === 0 && y === 0) continue;
+                            
+                            const nRow = row + y;
+                            const nCol = col + x;
+                            
+                            // Проверяем границы
+                            if (nRow >= 0 && nRow < ROWS && nCol >= 0 && nCol < COLS) {
+                                const nIdx = nRow * COLS + nCol;
+                                if (m[nIdx].mine) near++;
+                            }
+                        }
+                    }
+                    // ------------------------------------
+                    
+                    if (near > 0) {
+                        d.innerText = near;
+                        // Цвета цифр для красоты
+                        const colors = ['#8ab4f8', '#81c995', '#fdd663', '#f28b82'];
+                        d.style.color = colors[near-1] || '#f28b82';
+                    }
                 }
             };
             grid.appendChild(d);
         });
     }
 
-    // --- ГРАВИТАЦИЯ ---
+    // --- ГРАВИТАЦИЯ (ИСПРАВЛЕННАЯ) ---
     let gravityActive = false;
     let physicsObjects = [];
+    
     function startGravity() {
         if (gravityActive) return;
         gravityActive = true;
+        
         const els = document.querySelectorAll('.title-container, .translator-container');
+        
         els.forEach(el => {
             const r = el.getBoundingClientRect();
-            physicsObjects.push({ el, x: r.left, y: r.top, w: r.width, h: r.height, vx: Math.random()*10-5, vy: 0, rot: 0 });
-            el.style.position = 'fixed'; el.style.width = r.width+'px'; el.style.margin = '0'; el.style.zIndex = '9999';
+            // Сохраняем точные начальные координаты
+            const startX = r.left;
+            const startY = r.top;
+            
+            physicsObjects.push({ 
+                el, 
+                x: startX, 
+                y: startY, 
+                w: r.width, 
+                h: r.height, 
+                vx: (Math.random() - 0.5) * 15, // Случайный разлет
+                vy: 0, 
+                rot: 0,
+                rotSpeed: (Math.random() - 0.5) * 10 
+            });
+            
+            // Фиксируем элементы, чтобы они могли падать
+            el.style.position = 'fixed'; 
+            el.style.width = r.width+'px'; 
+            el.style.margin = '0'; 
+            el.style.zIndex = '9999';
+            el.style.top = '0'; // Сброс для корректной работы transform
+            el.style.left = '0';
+            // Используем transform для начальной позиции
+            el.style.transform = `translate(${startX}px, ${startY}px)`;
         });
+        
         requestAnimationFrame(updatePhys);
     }
 
     function updatePhys() {
         physicsObjects.forEach(o => {
-            o.vy += 0.5; o.x += o.vx; o.y += o.vy;
-            if(o.y+o.h > window.innerHeight) { o.y = window.innerHeight-o.h; o.vy *= -0.5; }
-            if(o.x<0 || o.x+o.w > window.innerWidth) o.vx *= -1;
-            o.el.style.top = o.y+'px'; o.el.style.left = o.x+'px';
+            o.vy += 0.8; // Сила гравитации
+            o.vx *= 0.99; // Сопротивление воздуха
+            
+            o.x += o.vx;
+            o.y += o.vy;
+            o.rot += o.rotSpeed; // Вращение
+
+            // Пол
+            if(o.y + o.h > window.innerHeight) { 
+                o.y = window.innerHeight - o.h; 
+                o.vy *= -0.6; // Отскок с потерей энергии
+                o.vx *= 0.8;  // Трение об пол
+                o.rotSpeed *= 0.8; // Замедление вращения при ударе
+                
+                // Чтобы не дрожало на полу
+                if (Math.abs(o.vy) < 1) o.vy = 0;
+            }
+
+            // Стены
+            if(o.x < 0) {
+                o.x = 0;
+                o.vx *= -0.8;
+            }
+            if(o.x + o.w > window.innerWidth) {
+                o.x = window.innerWidth - o.w;
+                o.vx *= -0.8;
+            }
+
+            // Применяем изменения
+            o.el.style.transform = `translate(${o.x}px, ${o.y}px) rotate(${o.rot}deg)`;
         });
-        requestAnimationFrame(updatePhys);
+        
+        if (physicsObjects.length > 0) {
+            requestAnimationFrame(updatePhys);
+        }
     }
 </script>
 </body>
