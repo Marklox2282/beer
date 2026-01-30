@@ -1,30 +1,19 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <!DOCTYPE html>
-<html>
-<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Beer Translate & Games</title>
     <script type="text/javascript">
         // Проверяем, с телефона ли зашел пользователь
         var isMobile = /iPhone|iPad|iPod|Android|BlackBerry|Opera Mini|IEMobile/i.test(navigator.userAgent);
         
         if (isMobile) {
             // Если это телефон, сразу перекидываем на mobile.html
-            // window.location.replace не дает нажать кнопку "Назад", чтобы не попасть в бесконечный цикл
-            window.location.replace("mobile.html");
+            // window.location.replace("mobile.html"); 
+            // Закомментировал редирект, чтобы ты мог проверить на ПК. Если нужно - раскомментируй.
         }
     </script>
-    <meta charset="UTF-8">
-    <title>Версия для ПК</title>
-    </head>
-<body>
-    <h1>Это версия для Компьютера</h1>
-    <p>Если ты видишь это с телефона — скрипт не сработал.</p>
-</body>
-</html>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Beer Translate & Games</title>
     <style>
         body {
             background-color: #121316;
@@ -63,6 +52,19 @@
         .secret-link:hover { color: #8ab4f8; }
 
         .author-tag { font-size: 14px; color: #5f6368; font-weight: 500; opacity: 0.7; pointer-events: none; }
+
+        /* --- СТИЛЬ ДЛЯ БУКВЫ S --- */
+        .s-link {
+            color: inherit;
+            text-decoration: none;
+            pointer-events: auto; /* Разрешаем клик */
+            transition: color 0.3s, text-shadow 0.3s;
+        }
+        .s-link:hover {
+            color: #2979ff; /* Синий цвет */
+            text-shadow: 0 0 10px rgba(41, 121, 255, 0.6); /* Свечение */
+        }
+        /* ------------------------- */
 
         .translator-container {
             background-color: #1e1f21;
@@ -253,7 +255,7 @@
         <h1>
             <a href="https://www.roblox.com/games/111530421351096/You-VS-Homer" class="secret-link">B</a>ee<a href="https://beerlanguage.ru/rat/" class="secret-link">r</a> Translate
         </h1>
-        <span class="author-tag">by spiderkaras</span>
+        <span class="author-tag">by <a href="https://beerlanguage.ru/sonuci" class="s-link" target="_blank">s</a>piderkaras</span>
     </div>
 
     <div class="translator-container" id="main-block">
@@ -681,14 +683,12 @@
     }
 
     function moveDrag(cX, cY) {
-        mouse.x = cX; mouse.y = cY;
-        if (mouse.down && mouse.draggedObj) {
-            const o = mouse.draggedObj;
-            o.x = cX - mouse.offsetX;
-            o.y = cY - mouse.offsetY;
-            o.vx = cX - mouse.lastX;
-            o.vy = cY - mouse.lastY;
-        }
+        if (!mouse.down || !mouse.draggedObj) return;
+        mouse.draggedObj.x = cX - mouse.offsetX;
+        mouse.draggedObj.y = cY - mouse.offsetY;
+        
+        mouse.draggedObj.vx = cX - mouse.lastX;
+        mouse.draggedObj.vy = cY - mouse.lastY;
         mouse.lastX = cX; mouse.lastY = cY;
     }
 
@@ -698,43 +698,33 @@
     }
 
     function updatePhys() {
-        physicsObjects.forEach(o => {
-            if (mouse.down && mouse.draggedObj === o) {
-                o.el.style.transform = `translate(${o.x}px, ${o.y}px) rotate(${o.rot}deg)`;
-                return;
-            }
+        if (!gravityActive) return;
+        
+        physicsObjects.forEach(obj => {
+            if (mouse.down && mouse.draggedObj === obj) {
+                // Если тащим - физика не действует, но обновляем визуал
+            } else {
+                obj.vy += 0.5; // Гравитация
+                obj.x += obj.vx;
+                obj.y += obj.vy;
+                obj.rot += obj.rotSpeed;
 
-            o.vy += 0.8;
-            o.vx *= 0.99;
-            o.rotSpeed *= 0.98;
+                // Отскок от пола
+                if (obj.y + obj.h > window.innerHeight) {
+                    obj.y = window.innerHeight - obj.h;
+                    obj.vy *= -0.6;
+                    obj.vx *= 0.95; // Трение
+                    obj.rotSpeed *= 0.9;
+                }
+                // Отскок от стен
+                if (obj.x < 0) { obj.x = 0; obj.vx *= -0.6; }
+                if (obj.x + obj.w > window.innerWidth) { obj.x = window.innerWidth - obj.w; obj.vx *= -0.6; }
+            }
             
-            o.x += o.vx;
-            o.y += o.vy;
-            o.rot += o.rotSpeed;
-
-            if(o.y + o.h > window.innerHeight) { 
-                o.y = window.innerHeight - o.h; 
-                o.vy *= -0.6; 
-                o.vx *= 0.8; 
-                if(Math.abs(o.vy) > 2) o.rotSpeed += (Math.random()-0.5) * 2;
-                if (Math.abs(o.vy) < 1) o.vy = 0;
-            }
-
-            if(o.x < 0) {
-                o.x = 0;
-                o.vx *= -0.8;
-            }
-            if(o.x + o.w > window.innerWidth) {
-                o.x = window.innerWidth - o.w;
-                o.vx *= -0.8;
-            }
-
-            o.el.style.transform = `translate(${o.x}px, ${o.y}px) rotate(${o.rot}deg)`;
+            obj.el.style.transform = `translate(${obj.x}px, ${obj.y}px) rotate(${obj.rot}deg)`;
         });
         
-        if (physicsObjects.length > 0) {
-            requestAnimationFrame(updatePhys);
-        }
+        requestAnimationFrame(updatePhys);
     }
 </script>
 </body>
