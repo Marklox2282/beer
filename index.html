@@ -727,5 +727,103 @@
         requestAnimationFrame(updatePhys);
     }
 </script>
+    <!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+/* ====== ВСТАВЬ СЮДА СВОЙ FIREBASE CONFIG ====== */
+const firebaseConfig = {
+  apiKey: "AIzaSyCesMs7AFeefzwVLhJfKyA3_QROoRnnONo",
+  authDomain: "beerlanguage-1337.firebaseapp.com",
+  projectId: "beerlanguage-1337",
+};
+/* ============================================ */
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+/* ====== FORUM ====== */
+const banned = ["http", "https", "casino", "spam", "viagra"];
+
+async function sendPost() {
+  const name = forumName.value.trim().slice(0, 20);
+  const text = forumText.value.trim().slice(0, 300);
+  if (!name || !text) return alert("Пусто");
+
+  const lower = text.toLowerCase();
+  if (banned.some(w => lower.includes(w))) {
+    return alert("Автомод: сообщение заблокировано");
+  }
+
+  await db.collection("posts").add({
+    name,
+    text,
+    time: Date.now()
+  });
+
+  forumText.value = "";
+}
+
+db.collection("posts")
+  .orderBy("time", "desc")
+  .limit(50)
+  .onSnapshot(snap => {
+    forumPosts.innerHTML = "";
+    snap.forEach(doc => {
+      const p = doc.data();
+      const d = document.createElement("div");
+      d.innerHTML = `<b>${p.name}</b>: ${p.text}`;
+      d.style.borderBottom = "1px solid #333";
+      forumPosts.appendChild(d);
+    });
+  });
+
+/* ====== CLICKER SAVE ====== */
+let clicker = JSON.parse(localStorage.getItem("clicker")) || {
+  cookies: 0, total: 0, cursors: 0, farms: 0
+};
+
+function saveClicker() {
+  localStorage.setItem("clicker", JSON.stringify(clicker));
+}
+
+function clickCookie() {
+  clicker.cookies++;
+  clicker.total++;
+  saveClicker();
+}
+
+function buyCursor() {
+  if (clicker.cookies >= 10) {
+    clicker.cookies -= 10;
+    clicker.cursors++;
+    saveClicker();
+  }
+}
+
+function buyFarm() {
+  if (clicker.cookies >= 100) {
+    clicker.cookies -= 100;
+    clicker.farms++;
+    saveClicker();
+  }
+}
+
+setInterval(() => {
+  const cps = clicker.cursors + clicker.farms * 5;
+  clicker.cookies += cps;
+  clicker.total += cps;
+  saveClicker();
+}, 1000);
+</script>
+
+<div class="translator-container">
+  <h2>💬 Форум</h2>
+  <input id="forumName" placeholder="Имя">
+  <textarea id="forumText" placeholder="Сообщение"></textarea>
+  <button onclick="sendPost()">Отправить</button>
+  <div id="forumPosts"></div>
+</div>
 </body>
 </html>
