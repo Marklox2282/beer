@@ -637,10 +637,8 @@
 
                 let timeStr = "сейчас";
                 if (msg.created_at) {
-                    // Обработка времени с учетом возможного отсутствия Z в ответе SQLite
                     const dateStr = msg.created_at.endsWith('Z') ? msg.created_at : msg.created_at + 'Z';
                     const date = new Date(dateStr);
-                    // Если дата некорректная, используем текущее время
                     if (!isNaN(date)) {
                         timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     }
@@ -666,7 +664,6 @@
             cont.scrollTop = cont.scrollHeight;
         } catch (error) {
             console.error('Ошибка:', error);
-            // Если ошибка, не спамим алертом, просто пишем в консоль, так как это периодический опрос
         }
     }
 
@@ -694,4 +691,261 @@
     let cookies = 0;
     let buildings = [
         { id: 0, name: 'Курсор', baseCost: 15, count: 0, cps: 0.1, icon: '👆' },
-        { id: 1, name: 'Бабушка', baseCost:
+        { id: 1, name: 'Бабушка', baseCost: 100, count: 0, cps: 1, icon: '👵' },
+        { id: 2, name: 'Поле хмеля', baseCost: 1100, count: 0, cps: 8, icon: '🌾' },
+        { id: 3, name: 'Шахта солода', baseCost: 12000, count: 0, cps: 47, icon: '⛏️' },
+        { id: 4, name: 'Завод', baseCost: 130000, count: 0, cps: 260, icon: '🏭' },
+        { id: 5, name: 'Банк', baseCost: 1400000, count: 0, cps: 1400, icon: '🏦' },
+        { id: 6, name: 'Храм', baseCost: 20000000, count: 0, cps: 7800, icon: '🏛️' },
+        { id: 7, name: 'Машина времени', baseCost: 330000000, count: 0, cps: 44000, icon: '⏳' }
+    ];
+
+    function getBuildingCost(b) { return Math.floor(b.baseCost * Math.pow(1.15, b.count)); }
+
+    function openClicker() {
+        menu.style.display = 'none';
+        document.getElementById('clickerContainer').style.display = 'flex';
+        document.getElementById('gameTitle').innerText = 'Beer Clicker';
+        
+        let saved = localStorage.getItem('beerClickerSave');
+        if(saved) {
+            let parsed = JSON.parse(saved);
+            cookies = parsed.cookies;
+            parsed.buildings.forEach((savedB, index) => {
+                if(buildings[index]) buildings[index].count = savedB.count;
+            });
+        }
+        
+        renderStore();
+        activeIntervals.push(setInterval(() => {
+            let totalCps = buildings.reduce((sum, b) => sum + (b.count * b.cps), 0);
+            cookies += totalCps / 10;
+            updateClickerUI();
+        }, 100));
+    }
+
+    function updateClickerUI() {
+        document.getElementById('beerCount').innerText = Math.floor(cookies) + ' Пива';
+        let totalCps = buildings.reduce((sum, b) => sum + (b.count * b.cps), 0);
+        document.getElementById('beerCps').innerText = 'в секунду: ' + totalCps.toFixed(1);
+        
+        buildings.forEach(b => {
+            let el = document.getElementById('building-' + b.id);
+            if(el) {
+                if(cookies >= getBuildingCost(b)) el.classList.remove('locked');
+                else el.classList.add('locked');
+            }
+        });
+    }
+
+    function renderStore() {
+        const store = document.getElementById('storeList');
+        store.innerHTML = '';
+        buildings.forEach(b => {
+            const item = document.createElement('div');
+            item.className = 'building-item locked';
+            item.id = 'building-' + b.id;
+            item.innerHTML = `
+                <div class="b-icon">${b.icon}</div>
+                <div class="b-info">
+                    <div class="b-name">${b.name}</div>
+                    <div class="b-cost">${getBuildingCost(b)} 🍺</div>
+                </div>
+                <div class="b-count">${b.count}</div>
+            `;
+            item.onclick = () => {
+                let cost = getBuildingCost(b);
+                if(cookies >= cost) {
+                    cookies -= cost;
+                    b.count++;
+                    renderStore();
+                    updateClickerUI();
+                }
+            };
+            store.appendChild(item);
+        });
+    }
+
+    function saveClicker() {
+        localStorage.setItem('beerClickerSave', JSON.stringify({
+            cookies: cookies,
+            buildings: buildings.map(b => ({ count: b.count }))
+        }));
+    }
+
+    document.getElementById('bigCookie').onclick = (e) => {
+        cookies++;
+        updateClickerUI();
+        const plus = document.createElement('div');
+        plus.innerText = '+1';
+        plus.style.position = 'absolute';
+        plus.style.left = e.clientX - 10 + 'px';
+        plus.style.top = e.clientY - 20 + 'px';
+        plus.style.color = '#fff';
+        plus.style.fontWeight = 'bold';
+        plus.style.pointerEvents = 'none';
+        plus.style.zIndex = '1000';
+        document.body.appendChild(plus);
+        let animY = e.clientY - 20;
+        let opacity = 1;
+        let anim = setInterval(() => {
+            animY -= 2; opacity -= 0.05;
+            plus.style.top = animY + 'px';
+            plus.style.opacity = opacity;
+            if(opacity <= 0) { clearInterval(anim); plus.remove(); }
+        }, 30);
+    };
+
+    // --- САПЕР ---
+    let minesGrid = [];
+    function openMines() {
+        menu.style.display = 'none';
+        document.getElementById('minesContainer').style.display = 'flex';
+        document.getElementById('gameTitle').innerText = 'Сапер';
+        initMinesweeper();
+    }
+    function initMinesweeper() {
+        const grid = document.getElementById('minesGrid');
+        grid.innerHTML = '';
+        minesGrid = [];
+        let minesCount = 15;
+        let cells = [];
+        for(let i=0; i<100; i++) cells.push({ mine: false, revealed: false, count: 0 });
+        for(let i=0; i<minesCount; i++) {
+            let r = Math.floor(Math.random()*100);
+            if(cells[r].mine) i--; else cells[r].mine = true;
+        }
+        cells.forEach((c, i) => {
+            const cell = document.createElement('div');
+            cell.className = 'mine-cell';
+            cell.onclick = () => {
+                if(c.mine) { alert('БАБАХ! Вы проиграли.'); initMinesweeper(); }
+                else {
+                    cell.classList.add('revealed');
+                    cell.innerText = '0';
+                    cell.style.color = '#555';
+                }
+            };
+            grid.appendChild(cell);
+        });
+    }
+
+    // --- ЗМЕЙКА ---
+    function openSnake() {
+        menu.style.display = 'none';
+        document.getElementById('snakeContainer').style.display = 'flex';
+        document.getElementById('gameTitle').innerText = 'Змейка';
+        initSnakeGame();
+    }
+    function initSnakeGame() {
+        const canvas = document.getElementById('snake-canvas');
+        const ctx = canvas.getContext('2d');
+        let score = 0;
+        let snake = [{x: 10, y: 10}];
+        let food = {x: 15, y: 15};
+        let dx = 1, dy = 0;
+        
+        document.onkeydown = (e) => {
+            if(e.key === 'ArrowUp' && dy === 0) { dx = 0; dy = -1; }
+            if(e.key === 'ArrowDown' && dy === 0) { dx = 0; dy = 1; }
+            if(e.key === 'ArrowLeft' && dx === 0) { dx = -1; dy = 0; }
+            if(e.key === 'ArrowRight' && dx === 0) { dx = 1; dy = 0; }
+        };
+
+        activeIntervals.push(setInterval(() => {
+            let head = {x: snake[0].x + dx, y: snake[0].y + dy};
+            if(head.x < 0 || head.x >= 20 || head.y < 0 || head.y >= 20) { alert('Игра окончена! Счет: ' + score); backToMenu(); return; }
+            snake.unshift(head);
+            if(head.x === food.x && head.y === food.y) {
+                score++; document.getElementById('snakeScore').innerText = 'Счет: ' + score;
+                food = {x: Math.floor(Math.random()*20), y: Math.floor(Math.random()*20)};
+            } else snake.pop();
+            
+            ctx.fillStyle = '#000'; ctx.fillRect(0,0,400,400);
+            ctx.fillStyle = '#ea4335'; ctx.fillRect(food.x*20, food.y*20, 18, 18);
+            ctx.fillStyle = '#81c995';
+            snake.forEach(p => ctx.fillRect(p.x*20, p.y*20, 18, 18));
+        }, 150));
+    }
+
+    // --- ФЛАГИ ---
+    const flagData = [
+        { f: '🇷🇺', n: 'Россия' }, { f: '🇺🇸', n: 'США' }, { f: '🇩🇪', n: 'Германия' }, { f: '🇫🇷', n: 'Франция' },
+        { f: '🇯🇵', n: 'Япония' }, { f: '🇨🇳', n: 'Китай' }, { f: '🇬🇧', n: 'Великобритания' }, { f: '🇧🇷', n: 'Бразилия' },
+        { f: '🇮🇹', n: 'Италия' }, { f: '🇰🇷', n: 'Корея' }, { f: '🇪🇸', n: 'Испания' }, { f: '🇰🇿', n: 'Казахстан' }
+    ];
+    let geoScore = 0;
+    function openGeo() {
+        menu.style.display = 'none';
+        document.getElementById('geoContainer').style.display = 'flex';
+        document.getElementById('gameTitle').innerText = 'Угадай Флаг';
+        nextFlag();
+    }
+    function nextFlag() {
+        const correct = flagData[Math.floor(Math.random()*flagData.length)];
+        document.getElementById('geoFlag').innerText = correct.f;
+        const opts = document.getElementById('geoOptions');
+        opts.innerHTML = '';
+        let options = [correct.n];
+        while(options.length < 4) {
+            let r = flagData[Math.floor(Math.random()*flagData.length)].n;
+            if(!options.includes(r)) options.push(r);
+        }
+        options.sort(() => Math.random() - 0.5).forEach(o => {
+            const b = document.createElement('button');
+            b.className = 'geo-btn';
+            b.innerText = o;
+            b.onclick = () => {
+                if(o === correct.n) { geoScore++; alert('Верно!'); }
+                else { geoScore = 0; alert('Ошибка! Это был флаг: ' + correct.n); }
+                document.getElementById('geoScoreDisplay').innerText = 'Счет: ' + geoScore;
+                nextFlag();
+            };
+            opts.appendChild(b);
+        });
+    }
+
+    // --- КАЗИНО ---
+    let casinoBalance = 10;
+    function openCasino() {
+        menu.style.display = 'none';
+        document.getElementById('casinoContainer').style.display = 'flex';
+        document.getElementById('gameTitle').innerText = 'Пивное Казино';
+        updateCasinoUI();
+    }
+    function updateCasinoUI() { document.getElementById('casinoBalance').innerText = '$' + casinoBalance; }
+    function adjustBet(mult) {
+        let bet = parseInt(document.getElementById('casinoBet').value);
+        document.getElementById('casinoBet').value = Math.floor(bet * mult);
+    }
+    function playCasino() {
+        let bet = parseInt(document.getElementById('casinoBet').value);
+        if(isNaN(bet) || bet <= 0 || bet > casinoBalance) { alert('Неверная ставка!'); return; }
+        const msg = document.getElementById('casinoMsg');
+        if(Math.random() < 0.45) {
+            casinoBalance += bet;
+            msg.innerText = 'ВЫИГРАЛ +$' + bet; msg.style.color = '#81c995';
+        } else {
+            casinoBalance -= bet;
+            msg.innerText = 'ПРОИГРАЛ -$' + bet; msg.style.color = '#ea4335';
+        }
+        updateCasinoUI();
+        if(casinoBalance <= 0) { alert('Вы все пропили! Вот вам $10 на удачу.'); casinoBalance = 10; updateCasinoUI(); }
+    }
+
+    // --- ГРАВИТАЦИЯ ---
+    let gravityInterval = null;
+    function startGravity() {
+        if(gravityInterval) { clearInterval(gravityInterval); gravityInterval = null; document.getElementById('main-block').style.transform = 'none'; return; }
+        const block = document.getElementById('main-block');
+        let y = 0, vy = 0;
+        block.style.position = 'relative';
+        gravityInterval = setInterval(() => {
+            vy += 0.8; y += vy;
+            if(y + block.offsetHeight > window.innerHeight - 50) { y = window.innerHeight - block.offsetHeight - 50; vy *= -0.5; }
+            block.style.top = y + 'px';
+        }, 20);
+    }
+</script>
+</body>
+</html>
