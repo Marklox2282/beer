@@ -679,7 +679,7 @@
             loadForumMessages();
             
             if (chatUpdateInterval) clearInterval(chatUpdateInterval);
-            chatUpdateInterval = setInterval(loadForumMessages, 3000);
+            chatUpdateInterval = setInterval(loadForumMessages, 500);
             activeIntervals.push(chatUpdateInterval);
         } else {
             document.getElementById('authScreen').style.display = 'block';
