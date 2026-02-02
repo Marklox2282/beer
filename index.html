@@ -386,8 +386,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
 <script>
-    // --- Мобильное устройство ---
+    // --- МОБИЛЬНОЕ УСТРОЙСТВО ---
     var isMobile = /iPhone|iPad|iPod|Android|BlackBerry|Opera Mini|IEMobile/i.test(navigator.userAgent);
 
     // --- ДАННЫЕ И ПЕРЕВОД ---
@@ -445,11 +446,6 @@
     function stopAllGames() { activeIntervals.forEach(clearInterval); activeIntervals = []; }
 
     // ============================================================
-    // ЧАТ — FIREBASE
-    // ============================================================
-
-<script>
-    // ============================================================
     // ЧАТ — CLOUDFLARE (замена Firebase)
     // ============================================================
     
@@ -489,12 +485,22 @@
         }
     }
 
+    document.getElementById('regAvatarInput').addEventListener('change', function() {
+        const f = this.files[0];
+        if (!f || !f.type.startsWith('image/')) return;
+        const img = document.getElementById('regAvatarPreview');
+        img.style.display = 'block';
+        img.src = URL.createObjectURL(f);
+    });
+
     async function doRegister() {
         const nickname = (document.getElementById('regNickname').value || '').trim();
         const password = (document.getElementById('regPassword').value || '').trim();
+        const codeWord = (document.getElementById('regCodeWord').value || '').trim();
         
         if (!nickname) { alert('Введите никнейм'); return; }
         if (!password) { alert('Введите пароль'); return; }
+        if (!codeWord) { alert('Введите кодовое слово'); return; }
 
         const userId = Date.now();
         currentUser = { id: userId, nickname: nickname, avatarUrl: '', guest: false };
@@ -506,14 +512,18 @@
         
         document.getElementById('regNickname').value = '';
         document.getElementById('regPassword').value = '';
+        document.getElementById('regCodeWord').value = '';
+        document.getElementById('regAvatarInput').value = '';
+        document.getElementById('regAvatarPreview').style.display = 'none';
     }
 
     async function doLogin() {
         const nickname = (document.getElementById('loginNickname').value || '').trim();
         const password = (document.getElementById('loginPassword').value || '').trim();
+        const codeWord = (document.getElementById('loginCodeWord').value || '').trim();
 
-        if (!nickname || !password) { 
-            alert('Введите Ник и Пароль'); 
+        if (!nickname || !password || !codeWord) { 
+            alert('Введите Ник, Пароль и Кодовое слово'); 
             return; 
         }
 
@@ -522,9 +532,6 @@
         document.getElementById('authScreen').style.display = 'none';
         document.getElementById('chatArea').style.display = 'flex';
         refreshChatUI();
-        
-        document.getElementById('loginNickname').value = '';
-        document.getElementById('loginPassword').value = '';
     }
 
     function doLogout() {
@@ -532,6 +539,10 @@
         saveCurrentUser();
         document.getElementById('authScreen').style.display = 'block';
         document.getElementById('chatArea').style.display = 'none';
+        
+        document.getElementById('loginNickname').value = '';
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('loginCodeWord').value = '';
     }
 
     function enterAsGuest() {
@@ -555,6 +566,13 @@
         document.getElementById('myNickname').innerText = currentUser.nickname;
         const img = document.getElementById('myAvatarImg');
         img.style.display = 'none';
+        const guestNotice = document.getElementById('guestLimitNotice');
+        if (currentUser.guest) {
+            guestNotice.style.display = 'block';
+            document.getElementById('guestLimitCount').innerText = '0';
+        } else {
+            guestNotice.style.display = 'none';
+        }
     }
 
     function escapeHtml(text) {
@@ -660,7 +678,6 @@
             refreshChatUI();
             loadForumMessages();
             
-            // Автообновление каждые 3 секунды
             if (chatUpdateInterval) clearInterval(chatUpdateInterval);
             chatUpdateInterval = setInterval(loadForumMessages, 3000);
             activeIntervals.push(chatUpdateInterval);
